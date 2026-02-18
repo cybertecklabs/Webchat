@@ -1,15 +1,15 @@
 mod handlers;
 mod models;
 mod auth;
+mod db;
 
 use axum::{
     routing::post,
     Router,
 };
 use dotenv::dotenv;
-use mongodb::Client;
 use std::net::SocketAddr;
-use std::{net::SocketAddr, time::Duration};
+use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::{
     cors::CorsLayer,
@@ -17,6 +17,7 @@ use tower_http::{
     timeout::TimeoutLayer,
     trace::TraceLayer,
 };
+use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() {
@@ -40,8 +41,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8081));
     println!("🔐 Auth service running on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    
+    let listener = TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }

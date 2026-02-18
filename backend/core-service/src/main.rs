@@ -8,6 +8,7 @@ use axum::{routing::{get, post}, Router};
 use dotenv::dotenv;
 use std::net::SocketAddr;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() {
@@ -29,8 +30,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     println!("🚀 Core service running on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    
+    let listener = TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
