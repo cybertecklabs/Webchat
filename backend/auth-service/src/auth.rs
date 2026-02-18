@@ -12,19 +12,18 @@ pub struct Claims {
     pub exp: usize,
 }
 
-pub fn hash_password(password: &str) -> String {
+pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
     let salt = SaltString::generate(&mut OsRng);
-    Argon2::default()
-        .hash_password(password.as_bytes(), &salt)
-        .unwrap()
-        .to_string()
+    Ok(Argon2::default()
+        .hash_password(password.as_bytes(), &salt)?
+        .to_string())
 }
 
-pub fn verify_password(password: &str, hash: &str) -> bool {
-    let parsed_hash = PasswordHash::new(hash).unwrap();
-    Argon2::default()
+pub fn verify_password(password: &str, hash: &str) -> Result<bool, argon2::password_hash::Error> {
+    let parsed_hash = PasswordHash::new(hash)?;
+    Ok(Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
-        .is_ok()
+        .is_ok())
 }
 
 pub fn create_jwt(user_id: &str) -> String {

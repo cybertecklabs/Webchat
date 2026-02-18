@@ -1,0 +1,59 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:6
+        ports:
+          - 27017:27017
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      
+      - name: Run auth-service tests
+        run: |
+          cd backend/auth-service
+          cargo test
+      
+      - name: Run core-service tests
+        run: |
+          cd backend/core-service
+          cargo test
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: |
+          cd frontend/web
+          npm ci
+      
+      - name: Run lint
+        run: |
+          cd frontend/web
+          npm run lint
+      
+      - name: Run build
+        run: |
+          cd frontend/web
+          npm run build

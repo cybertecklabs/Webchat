@@ -8,14 +8,39 @@ use axum::{
 use futures_util::{SinkExt, StreamExt};
 use redis::AsyncCommands;
 
+use axum::extract::Query;
+use std::collections::HashMap;
+use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+use crate::auth::Claims;
+
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
+    Query(params): Query<HashMap<String, String>>,
     State((_db, redis_client)): State<(mongodb::Database, redis::Client)>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(|socket| handle_socket(socket, redis_client))
+    let token = params.get("token").cloned();
+    let mut user_id = None;
+
+    if let Some(token_str) = token {
+        if let Ok(secret) = std::env::var("JWT_SECRET") {
+            if let Ok(token_data) = decode::<Claims>(
+                &token_str,
+                &DecodingKey::from_secret(secret.as_ref()),
+                &Validation::new(Algorithm::HS256),
+            ) {
+                user_id = Some(token_data.claims.sub);
+            }
+        }
+    }
+
+    if user_id.is_none() {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
+    ws.on_upgrade(move |socket| handle_socket(socket, redis_client, user_id.unwrap()))
 }
 
-async fn handle_socket(socket: WebSocket, redis_client: redis::Client) {
+async fn handle_socket(socket: WebSocket, redis_client: redis::Client, user_id: String) {
     let (mut sender, mut receiver) = socket.split();
 
     // Subscribe to Redis channel for real-time messages
@@ -41,8 +66,16 @@ async fn handle_socket(socket: WebSocket, redis_client: redis::Client) {
     let mut recv_task = tokio::spawn(async move {
         let mut conn = redis_client.get_async_connection().await.unwrap();
         while let Some(Ok(Message::Text(text))) = receiver.next().await {
-            // Publish message to Redis for all connected clients
-            let _: () = conn.publish("chat:messages", text).await.unwrap();
+            // Wrap the incoming text in a proper message format
+            let chat_msg = serde_json::json!({
+                "user_id": user_id,
+                "content": text,
+                "created_at": chrono::Utc::now(),
+            });
+            
+            if let Ok(msg_json) = serde_json::to_string(&chat_msg) {
+                let _: () = conn.publish("chat:messages", msg_json).await.unwrap();
+            }
         }
     });
 

@@ -3,6 +3,7 @@ mod db;
 mod models;
 mod routes;
 mod websocket;
+mod tests;
 
 use axum::{routing::{get, post}, Router};
 use dotenv::dotenv;

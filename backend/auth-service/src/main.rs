@@ -2,6 +2,7 @@ mod handlers;
 mod models;
 mod auth;
 mod db;
+mod tests;
 
 use axum::{
     routing::post,
