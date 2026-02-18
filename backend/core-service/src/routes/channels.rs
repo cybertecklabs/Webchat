@@ -18,7 +18,7 @@ pub async fn list_channels(
     
     let channels: Collection<Channel> = db.collection("channels");
     let cursor = channels
-        .find(doc! { "server_id": server_oid })
+        .find(doc! { "server_id": server_oid }, None)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
@@ -50,7 +50,7 @@ pub async fn create_channel(
     
     let channels: Collection<Channel> = db.collection("channels");
     let result = channels
-        .insert_one(&channel)
+        .insert_one(&channel, None)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     

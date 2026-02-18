@@ -18,7 +18,8 @@ async fn create_indexes(db: &Database) -> mongodb::error::Result<()> {
         IndexModel::builder()
             .keys(doc! { "email": 1 })
             .options(IndexOptions::builder().unique(true).build())
-            .build()
+            .build(),
+        None
     ).await?;
     
     // Servers collection indexes
@@ -26,13 +27,15 @@ async fn create_indexes(db: &Database) -> mongodb::error::Result<()> {
     servers.create_index(
         IndexModel::builder()
             .keys(doc! { "owner_id": 1 })
-            .build()
+            .build(),
+        None
     ).await?;
     servers.create_index(
         IndexModel::builder()
             .keys(doc! { "invite_code": 1 })
             .options(IndexOptions::builder().unique(true).build())
-            .build()
+            .build(),
+        None
     ).await?;
     
     // Channels collection indexes
@@ -40,7 +43,8 @@ async fn create_indexes(db: &Database) -> mongodb::error::Result<()> {
     channels.create_index(
         IndexModel::builder()
             .keys(doc! { "server_id": 1 })
-            .build()
+            .build(),
+        None
     ).await?;
     
     // Messages collection indexes
@@ -48,12 +52,14 @@ async fn create_indexes(db: &Database) -> mongodb::error::Result<()> {
     messages.create_index(
         IndexModel::builder()
             .keys(doc! { "channel_id": 1, "created_at": -1 })
-            .build()
+            .build(),
+        None
     ).await?;
     messages.create_index(
         IndexModel::builder()
             .keys(doc! { "user_id": 1 })
-            .build()
+            .build(),
+        None
     ).await?;
     
     println!("✅ Database indexes created successfully");

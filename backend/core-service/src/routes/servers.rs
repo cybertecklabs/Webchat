@@ -10,7 +10,7 @@ pub async fn list_servers(
 ) -> Result<Json<Vec<Server>>, StatusCode> {
     let servers: Collection<Server> = db.collection("servers");
     let cursor = servers
-        .find(doc! {})
+        .find(doc! {}, None)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
@@ -40,7 +40,7 @@ pub async fn create_server(
     
     let servers: Collection<Server> = db.collection("servers");
     let result = servers
-        .insert_one(&server)
+        .insert_one(&server, None)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     

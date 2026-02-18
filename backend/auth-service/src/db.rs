@@ -19,7 +19,8 @@ async fn create_indexes(db: &Database) -> mongodb::error::Result<()> {
         IndexModel::builder()
             .keys(doc! { "email": 1 })
             .options(IndexOptions::builder().unique(true).build())
-            .build()
+            .build(),
+        None
     ).await?;
     
     Ok(())

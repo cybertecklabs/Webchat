@@ -12,7 +12,7 @@ const nextConfig = {
     productionBrowserSourceMaps: false,
     // Code splitting optimization
     experimental: {
-        optimizeCss: true,
+        optimizeCss: false,
     },
 }
 

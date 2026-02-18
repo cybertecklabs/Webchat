@@ -40,8 +40,7 @@ pub async fn get_messages(
     
     let messages: Collection<Message> = db.collection("messages");
     let cursor = messages
-        .find(filter)
-        .with_options(options)
+        .find(filter, Some(options))
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
@@ -75,7 +74,7 @@ pub async fn send_message(
     
     let messages: Collection<Message> = db.collection("messages");
     let result = messages
-        .insert_one(&message)
+        .insert_one(&message, None)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     

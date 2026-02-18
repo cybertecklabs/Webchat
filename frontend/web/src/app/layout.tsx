@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "WebChat - Self-Hosted Gaming Chat Platform",
@@ -18,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={cn(inter.className, "bg-background text-foreground antialiased")}>
+      <body className={cn("bg-background text-foreground antialiased font-sans")}>
         {children}
       </body>
     </html>

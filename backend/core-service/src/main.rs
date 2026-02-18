@@ -16,7 +16,8 @@ async fn main() {
     dotenv().ok();
     
     let db = db::get_database().await.expect("DB connection failed");
-    let redis_client = redis::Client::open("redis://redis:6379").expect("Redis connection failed");
+    let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://redis:6379".to_string());
+    let redis_client = redis::Client::open(redis_url).expect("Redis connection failed");
 
     let cors = CorsLayer::permissive();
 

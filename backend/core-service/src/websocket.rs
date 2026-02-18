@@ -3,8 +3,10 @@ use axum::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         State,
     },
-    response::IntoResponse,
+    response::{IntoResponse, Response},
+    http::StatusCode,
 };
+use chrono;
 use futures_util::{SinkExt, StreamExt};
 use redis::AsyncCommands;
 
@@ -52,36 +54,40 @@ async fn handle_socket(socket: WebSocket, redis_client: redis::Client, user_id: 
     pubsub_conn.subscribe("chat:messages").await.unwrap();
     let mut pubsub_stream = pubsub_conn.on_message();
 
-    // Task to forward Redis messages to WebSocket
-    let mut send_task = tokio::spawn(async move {
-        while let Some(msg) = pubsub_stream.next().await {
-            let payload: String = msg.get_payload().unwrap();
-            if sender.send(Message::Text(payload)).await.is_err() {
-                break;
+    // Loop to forward Redis messages to WebSocket and WebSocket messages to Redis
+    let mut conn = redis_client.get_async_connection().await.unwrap();
+    loop {
+        tokio::select! {
+            // Redis -> WebSocket
+            maybe_msg = pubsub_stream.next() => {
+                if let Some(msg) = maybe_msg {
+                    if let Ok(payload) = msg.get_payload::<String>() {
+                        if sender.send(Message::Text(payload)).await.is_err() {
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            // WebSocket -> Redis
+            maybe_ws = receiver.next() => {
+                match maybe_ws {
+                    Some(Ok(Message::Text(text))) => {
+                        let chat_msg = serde_json::json!({
+                            "user_id": user_id,
+                            "content": text,
+                            "created_at": chrono::Utc::now(),
+                        });
+                        if let Ok(msg_json) = serde_json::to_string(&chat_msg) {
+                            let _: () = conn.publish("chat:messages", msg_json).await.unwrap();
+                        }
+                    }
+                    Some(Ok(_)) => {}
+                    Some(Err(_)) | None => break,
+                }
             }
         }
-    });
-
-    // Task to receive WebSocket messages and publish to Redis
-    let mut recv_task = tokio::spawn(async move {
-        let mut conn = redis_client.get_async_connection().await.unwrap();
-        while let Some(Ok(Message::Text(text))) = receiver.next().await {
-            // Wrap the incoming text in a proper message format
-            let chat_msg = serde_json::json!({
-                "user_id": user_id,
-                "content": text,
-                "created_at": chrono::Utc::now(),
-            });
-            
-            if let Ok(msg_json) = serde_json::to_string(&chat_msg) {
-                let _: () = conn.publish("chat:messages", msg_json).await.unwrap();
-            }
-        }
-    });
-
-    // Wait for either task to finish
-    tokio::select! {
-        _ = (&mut send_task) => recv_task.abort(),
-        _ = (&mut recv_task) => send_task.abort(),
     }
 }

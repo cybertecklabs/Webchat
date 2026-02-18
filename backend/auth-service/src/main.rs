@@ -7,6 +7,7 @@ mod tests;
 use axum::{
     routing::post,
     Router,
+    http::StatusCode,
 };
 use dotenv::dotenv;
 use std::net::SocketAddr;
@@ -31,13 +32,10 @@ async fn main() {
     let app = Router::new()
         .route("/register", post(handlers::register))
         .route("/login", post(handlers::login))
-        .layer(
-            ServiceBuilder::new()
-                .layer(TraceLayer::new_for_http())
-                .layer(TimeoutLayer::new(Duration::from_secs(30)))
-                .layer(RequestBodyLimitLayer::new(1024 * 1024)) // 1MB limit
-                .layer(cors),
-        )
+        .layer(TraceLayer::new_for_http())
+        .layer(TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(30)))
+        .layer(RequestBodyLimitLayer::new(1024 * 1024))
+        .layer(cors)
         .with_state(db);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8081));

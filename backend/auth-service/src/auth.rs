@@ -26,7 +26,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, argon2::passw
         .is_ok())
 }
 
-pub fn create_jwt(user_id: &str) -> String {
+pub fn create_jwt(user_id: &str) -> Result<String, jsonwebtoken::errors::Error> {
     let expiration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -42,5 +42,4 @@ pub fn create_jwt(user_id: &str) -> String {
         &claims,
         &EncodingKey::from_secret(secret.as_ref()),
     )
-    .unwrap()
 }

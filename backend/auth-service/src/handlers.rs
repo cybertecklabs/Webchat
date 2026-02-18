@@ -19,7 +19,7 @@ pub async fn register(
 
     // Check if user exists
     if users
-        .find_one(doc! { "email": &payload.email })
+        .find_one(doc! { "email": &payload.email }, None)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .is_some()
@@ -39,7 +39,7 @@ pub async fn register(
     };
 
     users
-        .insert_one(user)
+        .insert_one(user, None)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -57,7 +57,7 @@ pub async fn login(
     let users: Collection<User> = db.collection("users");
 
     let user = users
-        .find_one(doc! { "email": &payload.email })
+        .find_one(doc! { "email": &payload.email }, None)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()))?;
